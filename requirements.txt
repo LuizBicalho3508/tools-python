@@ -1,4 +1,5 @@
-# =================================
-# Arquivo: requirements.txt
-# =================================
+# requirements.txt
 streamlit
+streamlit-authenticator
+moviepy
+PyYAML
