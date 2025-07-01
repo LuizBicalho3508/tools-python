@@ -1,5 +1,3 @@
-# requirements.txt
-
 streamlit
 streamlit-authenticator
 moviepy
