@@ -3,21 +3,11 @@ from moviepy.editor import VideoFileClip
 import os
 
 # --- Verificação de Autenticação ---
-# Esta é a parte mais importante para proteger a página.
-# Ele verifica o `session_state` que foi definido em `app.py`.
+# A primeira coisa a fazer em qualquer página protegida.
 if not st.session_state.get("password_correct", False):
     st.error("Você não está autorizado a acessar esta página.")
     st.info("Por favor, faça o login na página principal para continuar.")
-    st.stop() # Interrompe a execução da página se não estiver logado
-
-# --- O restante do código do conversor permanece o mesmo ---
-
-# --- Configuração da Página ---
-st.set_page_config(
-    page_title="Conversor MP4 para MP3",
-    page_icon="🎵",
-    layout="centered"
-)
+    st.stop() # Interrompe a execução se não estiver logado
 
 # --- Funções Auxiliares ---
 def converter_mp4_para_mp3(arquivo_video_temporario, arquivo_audio_saida):
@@ -44,21 +34,31 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
+    # Usa o ID da sessão para criar nomes de arquivo únicos
     nome_base = os.path.splitext(uploaded_file.name)[0]
-    arquivo_mp4_temp = f"temp_{nome_base}.mp4"
-    arquivo_mp3_saida = f"{nome_base}.mp3"
+    session_id = st.session_state.session_id
+    temp_dir = "temp_files"
+    
+    # Cria um diretório temporário se não existir
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+
+    arquivo_mp4_temp = os.path.join(temp_dir, f"temp_{nome_base}_{session_id}.mp4")
+    arquivo_mp3_saida = os.path.join(temp_dir, f"{nome_base}_{session_id}.mp3")
 
     with open(arquivo_mp4_temp, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-    st.info("Arquivo MP4 carregado. Iniciando a conversão...")
+    st.info(f"Arquivo '{uploaded_file.name}' carregado. Iniciando a conversão...")
 
-    with st.spinner(f"Convertendo '{uploaded_file.name}' para MP3... Por favor, aguarde."):
+    with st.spinner("Convertendo... Por favor, aguarde."):
         sucesso = converter_mp4_para_mp3(arquivo_mp4_temp, arquivo_mp3_saida)
 
-    os.remove(arquivo_mp4_temp)
+    # Limpa o arquivo de vídeo temporário
+    if os.path.exists(arquivo_mp4_temp):
+        os.remove(arquivo_mp4_temp)
 
-    if sucesso:
+    if sucesso and os.path.exists(arquivo_mp3_saida):
         st.success("Conversão concluída com sucesso!")
         
         st.markdown("### Ouça o resultado:")
@@ -69,9 +69,9 @@ if uploaded_file is not None:
             st.download_button(
                 label="Baixar MP3",
                 data=file,
-                file_name=arquivo_mp3_saida,
+                # Oferece um nome de arquivo limpo para o usuário
+                file_name=f"{nome_base}.mp3",
                 mime="audio/mp3"
             )
 else:
     st.warning("Aguardando o upload de um arquivo MP4.")
-
