@@ -2,4 +2,4 @@
 # Arquivo: requirements.txt
 # =================================
 streamlit
-moviepy
+pydub
