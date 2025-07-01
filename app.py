@@ -1,98 +1,70 @@
 import streamlit as st
-from moviepy.editor import VideoFileClip
-import os
 
 # --- Configuração da Página ---
 st.set_page_config(
-    page_title="Conversor MP4 para MP3",
-    page_icon="🎵",
-    layout="centered",
-    initial_sidebar_state="auto",
+    page_title="Login - Ferramentas Defecon",
+    page_icon="🔐",
+    layout="centered"
 )
 
-# --- Funções Auxiliares ---
+# --- Função de Autenticação ---
+def check_password():
+    """Retorna `True` se o usuário inseriu a senha correta."""
 
-def converter_mp4_para_mp3(arquivo_video_temporario, arquivo_audio_saida):
-    """
-    Converte um arquivo de vídeo (MP4) para um arquivo de áudio (MP3).
+    def password_entered():
+        """Verifica se a senha inserida pelo usuário corresponde à senha correta."""
+        if st.session_state["password"] == st.secrets["credentials"]["password"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Não guardar a senha na session state
+        else:
+            st.session_state["password_correct"] = False
 
-    Args:
-        arquivo_video_temporario (str): O caminho para o arquivo de vídeo MP4 salvo temporariamente.
-        arquivo_audio_saida (str): O caminho onde o arquivo MP3 será salvo.
-    
-    Returns:
-        bool: True se a conversão for bem-sucedida, False caso contrário.
-    """
-    try:
-        # Carrega o clipe de vídeo
-        video_clip = VideoFileClip(arquivo_video_temporario)
+    # --- Lógica de Exibição do Login ---
+    # Se a senha ainda não foi validada, mostra os campos de login
+    if not st.session_state.get("password_correct", False):
+        st.image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQjY3h-b5z9-mI4gV2Qc-Z-Q2A1b-g8XJd&s", width=150) # Exemplo de logo
+        st.title("Área Restrita - Ferramentas Defecon")
+        st.markdown("---")
         
-        # Extrai o áudio do clipe
-        audio_clip = video_clip.audio
+        # Inputs para usuário e senha
+        st.text_input("Usuário", key="username")
+        st.text_input(
+            "Senha", type="password", on_change=password_entered, key="password"
+        )
         
-        # Escreve o arquivo de áudio
-        audio_clip.write_audiofile(arquivo_audio_saida, codec='mp3')
+        # Mensagem de erro se a senha estiver errada
+        if "password_correct" in st.session_state and not st.session_state.password_correct:
+            st.error("😕 Usuário ou senha incorretos.")
         
-        # Libera os recursos
-        audio_clip.close()
-        video_clip.close()
-        
-        return True
-    except Exception as e:
-        st.error(f"Ocorreu um erro durante a conversão: {e}")
         return False
-
-# --- Interface do Streamlit ---
-
-st.title(" conversor de midias🎵")
-st.markdown("Faça o upload do seu arquivo de vídeo MP4 para extrair o áudio em formato MP3.")
-
-# Widget para upload de arquivo
-uploaded_file = st.file_uploader(
-    "Escolha um arquivo MP4",
-    type=["mp4"],
-    help="O limite de tamanho do arquivo é de 200MB no Streamlit Cloud."
-)
-
-if uploaded_file is not None:
-    # Define os nomes dos arquivos temporários
-    nome_base = os.path.splitext(uploaded_file.name)[0]
-    arquivo_mp4_temp = f"temp_{nome_base}.mp4"
-    arquivo_mp3_saida = f"{nome_base}.mp3"
-
-    # Salva o arquivo carregado em disco temporariamente para que o moviepy possa processá-lo
-    with open(arquivo_mp4_temp, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-    st.info("Arquivo MP4 carregado. Iniciando a conversão...")
-
-    # Bloco de processamento com spinner
-    with st.spinner(f"Convertendo '{uploaded_file.name}' para MP3... Por favor, aguarde."):
-        sucesso = converter_mp4_para_mp3(arquivo_mp4_temp, arquivo_mp3_saida)
-
-    # Limpa o arquivo de vídeo temporário após a conversão
-    os.remove(arquivo_mp4_temp)
-
-    if sucesso:
-        st.success("Conversão concluída com sucesso!")
         
-        # Exibe o player de áudio
-        st.markdown("### Ouça o resultado:")
-        st.audio(arquivo_mp3_saida, format='audio/mp3')
+    # Se a senha foi validada, retorna True
+    else:
+        # Validação extra para o nome de usuário
+        if st.session_state.get("username") == st.secrets["credentials"]["username"]:
+            return True
+        else:
+            # Se o usuário estiver errado, reseta a autenticação
+            st.session_state["password_correct"] = False
+            st.error("😕 Usuário ou senha incorretos.")
+            st.rerun() # Força a recarga para mostrar o formulário de login novamente
+            return False
 
-        # Oferece o botão de download
-        st.markdown("### Baixe seu arquivo MP3:")
-        with open(arquivo_mp3_saida, "rb") as file:
-            st.download_button(
-                label="Baixar MP3",
-                data=file,
-                file_name=arquivo_mp3_saida,
-                mime="audio/mp3"
-            )
-        
-        # Limpa o arquivo de áudio gerado após o download (opcional, mas bom para gerenciamento de espaço)
-        # st.info("O arquivo será removido do servidor após o download.")
-        # No Streamlit Cloud, o sistema de arquivos é efêmero, então a limpeza manual nem sempre é crítica.
 
-else:
-    st.warning("Aguardando o upload de um arquivo MP4.")
+# --- Execução Principal ---
+if check_password():
+    st.sidebar.success("Login realizado com sucesso!")
+    st.sidebar.markdown("---")
+    
+    # Botão de Logout na barra lateral
+    if st.sidebar.button("Logout"):
+        st.session_state["password_correct"] = False
+        st.session_state["username"] = "" # Limpa o nome de usuário
+        st.rerun()
+
+    # Conteúdo da página principal após o login
+    st.title("Bem-vindo ao Painel de Ferramentas! 👋")
+    st.markdown("---")
+    st.write("Use a barra lateral à esquerda para navegar entre as ferramentas disponíveis.")
+    st.info("Você está logado. Todas as ferramentas estão agora acessíveis.")
+
