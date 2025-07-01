@@ -2,4 +2,3 @@
 # Arquivo: requirements.txt
 # =================================
 streamlit
-pydub
