@@ -1,2 +1,5 @@
+# =================================
+# Arquivo: requirements.txt
+# =================================
 streamlit
 moviepy
